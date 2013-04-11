@@ -1,0 +1,32 @@
+{ "pigs" : [
+	{
+		"name" : "Bacon",
+		"address" : "elnux2.cs.umass.edu",
+		"port" : 2401
+	},
+	{
+		"name" : "Ham",
+		"address" : "elnux3.cs.umass.edu",
+		"port" : 2402
+	},
+	{
+		"name" : "Pork",
+		"address" : "elnux4.cs.umass.edu",
+		"port" : 2403
+	},
+	{
+		"name" : "Prosciutto",
+		"address" : "elnux7.cs.umass.edu",
+		"port" : 2404 
+	}
+  ],
+  "master" : {
+  	"address" : "elnux1.cs.umass.edu",
+  	"port" : 2400
+  },
+  "game" : {
+  	"boardSize" : 3,
+  	"error" : 1,
+  	"messageDelay" : 1000
+  }
+}

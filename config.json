@@ -1,0 +1,47 @@
+{ "pigs" : [
+	{
+		"name" : "Bacon",
+		"address" : "localhost",
+		"port" : 2401
+	},
+	{
+		"name" : "Ham",
+		"address" : "localhost",
+		"port" : 2402
+	},
+	{
+		"name" : "Pork",
+		"address" : "localhost",
+		"port" : 2403
+	},
+	{
+		"name" : "Prosciutto",
+		"address" : "localhost",
+		"port" : 2404 
+	},
+   {
+   		"name" : "Gammon",
+		"address" : "localhost",
+		"port" : 2405
+	},
+	{
+		"name" : "Shem",
+		"address" : "localhost",
+		"port" : 2406
+	},
+	{
+		"name" : "Yaphet",
+		"address" : "localhost",
+		"port" : 2407
+	}
+  ],
+  "master" : {
+  	"address" : "localhost",
+  	"port" : 2400
+  },
+  "game" : {
+  	"boardSize" : 3,
+  	"error" : 1,
+  	"messageDelay" : 1000
+  }
+}
