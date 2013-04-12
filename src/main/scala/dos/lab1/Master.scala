@@ -1,4 +1,4 @@
-package dos.lab1
+package dos.lab2
 import scala.actors.Actor
 import scala.actors.Actor._
 import scala.actors.remote._
@@ -12,6 +12,11 @@ import scala.util.Random
  * @param computer The hostname the computer is connecting from
  */
 case class Connect(computer: String)
+/**
+ * Actor message: Request from pig to join the P2P network. Will send information to pig so that it can join.
+ * @param computer The hostname the computer is connecting from
+ */
+case class Connected
 /** Actor message: Request the amount of nodes connected, so that the first pig can know everybody has connected. **/
 case object Nodes
 /** Actor message: Request the config information about the last connection so that the first one can complete the ring. **/
@@ -33,9 +38,8 @@ class Master extends Actor {
   /** Reference to the current Game **/
   var game: Game = null
   val rand = new Random
-
   /** Is the game ready to start, all pigs are connected to the network **/
-  def ready: Boolean = (upConnections == Config.N)
+  def ready: Boolean = (readyPigs == Config.N)
 
   /**
    * Get a pig configuration from the configurations based on a hostname
@@ -89,11 +93,10 @@ class Master extends Actor {
         case Connect(computer) => {
           println("Connection Requested from " + computer)
           val p = getPig(computer)
-          sender ! p
+          sender ! (p, upConnections)
         }
         case Connected => {
           readyPigs += 1
-          ready = (readyPigs == Config.N)
         }
         case Nodes => {
           sender ! connections.size
@@ -108,22 +111,15 @@ class Master extends Actor {
             for (con <- connections) {
               pigToCon(con.idNumber) = select(Node(con.address, con.port), Symbol(con.name))
             }
-            for(p <- pigToCon.values) p ! ConnectToAll(connections.toArray)
+            for(p <- pigToCon.values) p ! ConnectToAll(connections.toList)
           }
         }
-        case SendGame(board) => {
+        case SendGame(board, round) => {
           for (piggy <- pigToCon.values)
-            piggy ! SendGame(board)
+            piggy ! SendGame(board, round)
         }
         case Where => {
-          sender ! game.landing + (Config.game.error * (rand.nextDouble.round + (-1 * rand.nextDouble.round)))
-        }
-        case Hit(landing) => {
-          for (piggy <- pigToCon.values) {
-            val (p: Int, l: Int) = (piggy !? Hit(landing))
-            game.updates += 1
-            game.finalBoard(p) = l
-          }
+          sender ! game.landing
         }
         case Done(numHit) => {
           game.success = numHit

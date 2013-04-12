@@ -1,4 +1,4 @@
-package dos.lab1
+package dos.lab2
 import net.liftweb.json._
 import scala.io.Source
 import scala.collection.mutable.{ArrayBuffer, HashMap}

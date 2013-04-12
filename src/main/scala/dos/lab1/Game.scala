@@ -1,4 +1,4 @@
-package dos.lab1
+package dos.lab2
 import scala.actors.Actor
 import scala.actors.AbstractActor
 import scala.actors.Actor._
@@ -11,11 +11,11 @@ import scala.collection.mutable.HashMap
   * 
   * @param board The representation of the world
   */
-case class SendGame(board : Array[Int])
+case class SendGame(board : Array[Int], round : Int)
 /** Actor message: Sends the hit location to the master and then to the pigs
   * @param landing The final landing information of the bird
 */
-case class Hit(landing : Int)
+case class Hit(delay : Int, l : Int)
 /** Actor message: Tells the master to send information about whether a pig is hit by bird. Master will use this message to send that information. 
   * @param status The status of the pigs being hit or not by the bird
   */
@@ -60,15 +60,11 @@ class Game(val master : Master) {
     	landing = rand.nextInt(Config.game.size)
         println("Will hit location: " + landing)
     	Game.printBoard(board)
-    	(master ! SendGame(board))
-    	val speed = rand.nextInt(9900) + 100
+    	(master ! SendGame(board, round))
+    	val speed = rand.nextInt(1000) + 100
         println("Will hit in: " +speed)
     	Thread.sleep(speed)
         println("Hitting!")
-    	(master ! Hit(landing))
-        println("Waiting for updates!")
-        while(updates != Config.N) Thread.sleep(1000)
-        println("Lets do it!")
         Game.printBoard(board, finalBoard)
         (master ! Final(true))
         println("Are we done yet?!")

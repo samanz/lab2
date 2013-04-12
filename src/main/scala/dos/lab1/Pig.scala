@@ -1,10 +1,10 @@
-package dos.lab1
+package dos.lab2
 import scala.actors.Actor
 import scala.actors.AbstractActor
 import scala.actors.Actor._
 import scala.actors.remote._
 import scala.actors.remote.RemoteActor._
-import java.util.UUID
+import java.util.{Random, UUID}
 import scala.collection.mutable.{ ArrayBuffer, HashMap }
 
 /** Actor message: Tells master that it is ready to be connected to **/
@@ -12,11 +12,13 @@ case object Ready
 /** Actor message: Asks the master to help get information about estimated location of bird hitting **/
 case object Where
 /**
- * Actor message: requests neighbor to connect back to current pig to create bidirectional ring
+ * Actor message: floods information to P2P network with information about estimated location bird lands
  *
- * @param pig The configuration information so the pig can connect to the current actor
+ * @param position The location the bird might land
+ * @param messageId The UUID of the message
+ * @param hopcount The number of hops allowed left to be made in the p2p network
  */
-case class ForwardConnect(pig: PigConfig)
+case class BirdApproaching(location : Int, l : Int)
 /**
  * Actor message: floods information to P2P network with information about estimated location bird lands
  *
@@ -24,15 +26,15 @@ case class ForwardConnect(pig: PigConfig)
  * @param messageId The UUID of the message
  * @param hopcount The number of hops allowed left to be made in the p2p network
  */
-case class BirdApproaching(position: Int, messageId: UUID, hopcount: Int)
+case class Election(ids : List[Int], round : Int, l : Int)
 /**
- * Actor message: floods information to P2P message indicating a certain pig should move away from bird
+ * Actor message: floods information to P2P network with information about estimated location bird lands
  *
- * @param pigId The id of the pig that will recieve the message
- * @param loc The location that the pig should move away from
+ * @param position The location the bird might land
  * @param messageId The UUID of the message
+ * @param hopcount The number of hops allowed left to be made in the p2p network
  */
-case class TakeShelter(pigId: Int, loc: Int, messageId: UUID)
+case class Leader(id : Int, round : Int, l : Int)
 /**
  * Actor message: floods the P2P network with requesting the status from all the pigs
  *
@@ -40,27 +42,22 @@ case class TakeShelter(pigId: Int, loc: Int, messageId: UUID)
  * @param trav The ids indicating the traversal of the message through the p2p network so it can be reversed by the reply message
  * @param messageId The UUID of the message
  */
-case class StatusAll(hopcount: Int, trav: Array[Int], messageId: UUID)
-/**
- * Actor message: Replies to StatusAll with information about the status of the pigs
- *
- * @param pigId The id of the pig replying
- * @param status The hit status of the pig replying
- * @param trav The current level of the reverse traversal through the P2P network
- */
-case class WasHit(pigId: Int, status: Boolean, trav: Array[Int])
+case class StatusAll(l : Int)
 /**
  * Actor message: Tell the master that the round has ended and the amount of pigs that were hit in the round
  *
  * @param numHit The number of pigs hit during round
  */
 case class Done(numHit: Int)
+
+case class Inform(leadme: String, l : Int)
+
 /**
  * Actor message: Tell the pigs that all the other pigs are up and ready and to connect to them
  *
  * @param pigs The pigs configuration information for pigs that are connected to the network
  */
-case class ConnectToAll(pigs : Array[PigConfig])
+case class ConnectToAll(pigs : List[PigConfig])
 /**
  * A Pig class. This class is a scala remote actor that sends information on the pig-to-pig network to avoid being hit by birds sent by game.
  *
@@ -95,9 +92,27 @@ class Pig(val computer: String) extends Actor {
   /** The number of statusAll responses the first pig has seen **/
   var responses = 0
   /** The information about other pigs **/
-  val otherPigs = new ArrayBuffer[Pigs]()
+  val otherPigs = new ArrayBuffer[PigConfig]()
   /** The connections to other pigs **/
-  val connections = new ArrayBuffer[AbstractActor]()
+  val connections = new HashMap[String, AbstractActor]()
+  /** Next pig in the network **/
+  var nextPig : AbstractActor  = null
+  /** The leader election id of the pig **/
+  var electionId : Int = -1
+  /** lamport **/
+  var lamport = 0
+  /** Current leader is the lord **/
+  var lord = ""
+  /** The round number **/
+  var round = 0
+  /** The round number **/
+  var leadRound = 0
+  /** Time we moved! **/
+  var movedTime = 0
+  /** This pig needs to evade **/
+  var evading = false
+  /** random **/
+  val rand = new Random
 
   /**
    * Determines if the estimated location of bird hitting will lead to this pig being the primary one hit
@@ -124,21 +139,8 @@ class Pig(val computer: String) extends Actor {
    * @param location The location that the bird is estimated hitting
    * @return array of neighbor ids that should be told to move
    */
-  def moveToSafety(location: Int): Array[Int] = {
-    val neighbors = ArrayBuffer[Int]()
-    var ns = ArrayBuffer[Int]()
+  def moveToSafety(location: Int) {
     var l = myLocation
-    if (myLocation - 1 >= 0 && pigBoard(myLocation - 1) > 0 && pigBoard(myLocation - 1) < stone) ns += pigBoard(myLocation - 1)
-    if (myLocation + 1 < pigBoard.size && pigBoard(myLocation + 1) > 0 && pigBoard(myLocation + 1) < stone) ns += pigBoard(myLocation + 1)
-    while (l >= 0 && pigBoard(l) > 0) {
-      if (pigBoard(l) != stone) ns += pigBoard(l)
-      l -= 1
-    }
-    l = myLocation
-    while (l < pigBoard.size && pigBoard(l) > 0) {
-      if (pigBoard(l) != stone) ns += pigBoard(l)
-      l += 1
-    }
     if (location < myLocation) {
       if (myLocation + 1 < pigBoard.size && pigBoard(myLocation + 1) != stone) myLocation += 1
     } else if (location > myLocation) {
@@ -147,12 +149,11 @@ class Pig(val computer: String) extends Actor {
       if (myLocation + 1 < pigBoard.size && pigBoard(myLocation + 1) != stone) myLocation += 1
       else if (myLocation - 1 > 0 && pigBoard(myLocation - 1) != stone) myLocation -= 1
     }
-    ns.toSet.toArray
   }
 
   def act() {
     val master = select(Node(Config.master.address, Config.master.port), Symbol(Config.master.address))
-    val p: PigConfig = (master !? Connect(computer))
+    var (p: PigConfig, id : Int) = (master !? Connect(computer))
     me = p
     println("Pig: " + me.name + " reporting for duty on " + computer + " at port: " + me.port)
     alive(me.port)
@@ -160,155 +161,127 @@ class Pig(val computer: String) extends Actor {
     master ! Ready
     loop {
       react {
-        case ConnectToAll(pigs) {
-          pigs.filter( _ != me).foreach{ otherPigs += pig; connections += select(Node(pig.address, pig.port), Symbol(pig.name); }
+        case ConnectToAll(pigs) => {
+          var sawMe = false
+          id = 0
+          for(p <- pigs) {
+            id += 1
+            if(p.name == me.name) {
+              sawMe = true
+              electionId = id
+            } else {
+              otherPigs += p; 
+              connections(p.name) = select(Node(p.address, p.port), Symbol(p.name)); 
+              if(sawMe) { println("Connecting to " + otherPigs.last.name); nextPig = connections(otherPigs.last.name); sawMe = false }
+            }
+          }
+          if(nextPig == null) {
+            nextPig = connections(otherPigs.head.name)
+            println("Connecting to otherPigs " + otherPigs.head.name )
+          }
           master ! Connected
         }
-        case Hit(landing) => {
-          println("I know where it hit!")
-          sender ! (me.idNumber, myLocation)
-          landedLoc = landing
-        }
-        case BirdApproaching(location, messageId, hopcount) => {
-          if (!seenMessages.contains(messageId)) {
-            println("accepting BirdApproaching message")
-            seenMessages(messageId) = true
-            if (simpleWillHitMe(location)) {
-              println("It will probably hit me! Taking evasive action.")
-              val pigsToMove = moveToSafety(location)
-              for (p <- pigsToMove) {
-                println("Sending TakeShelter")
-                val messageId = UUID.randomUUID
-                seenMessages(messageId) = true
-                Actor.actor {
-                  Thread.sleep(Config.game.messageDelay)
-                  neighbor ! TakeShelter(p, location, messageId)
-                  next ! TakeShelter(p, location, messageId)
-                }
-              }
-            }
-            if (hopcount > 1) {
-              println("Proprogating BirdApproaching")
-              Actor.actor {
-                Thread.sleep(Config.game.messageDelay)
-                neighbor ! BirdApproaching(location, messageId, hopcount - 1)
-                next ! BirdApproaching(location, messageId, hopcount - 1)
-              }
+        case Hit(time,l) => {
+          lamport = math.max(l,lamport+1)
+          println("\tI know where it hit!")
+          println("\t\tat time: " + lamport)
+          println("\t\twith hit time: " + time)
+          if(evading) {
+            val notEvaded = simpleWillHitMe(landedLoc)
+            if(notEvaded) statusHit = true
+            else {
+              println("\t\t\tMy moved time was: " + movedTime)
+              if(time <= movedTime) statusHit = true
+              else statusHit = false
             }
           }
         }
-        case TakeShelter(pigId, loc, messageId) => {
-          if (!seenMessages.contains(messageId)) {
-            seenMessages(messageId) = true
-            if (me.idNumber == pigId && sheltered == false) {
-              println("accepting TakeShelter message, attempting to take evasive action.")
-              sheltered = true
-              if (loc < myLocation) {
-                if (myLocation + 1 < pigBoard.size && pigBoard(myLocation + 1) != stone) myLocation += 1
-              } else if (loc > myLocation) {
-                if (myLocation - 1 > 0 && pigBoard(myLocation - 1) != stone) myLocation -= 1
-              } else {
-                if (myLocation + 1 < pigBoard.size && pigBoard(myLocation + 1) != stone) myLocation += 1
-                else if (myLocation - 1 > 0 && pigBoard(myLocation - 1) != stone) myLocation -= 1
-              }
+        case BirdApproaching(location,l) => {
+          landedLoc = location
+          lamport = math.max(l,lamport+1)
+          lamport += rand.nextInt(6)
+          println("\taccepting BirdApproaching message")
+          println("\t\tat time: " + lamport)
+          evading = false
+          if (simpleWillHitMe(location)) {
+            evading = true
+            println("\t\tIt will probably hit me! Taking evasive action.")
+            moveToSafety(location)
+            movedTime = lamport
+          }
+        }
+        case StatusAll(l) => {
+          lamport = math.max(l,lamport+1)
+          println("\tGot status message with time: " + lamport)
+          if(statusHit) println("\t\tSo.. I was too late!")
+          else println("Yes! I moved in time!")
+          sender ! (if(statusHit) 1 else 0)
+        }
+        case Election(ids, r, l) => {
+          lamport = math.max(l,lamport+1)
+          println("\tElecting leader with ids: " + ids.mkString(" "))
+          println("\t\tWith max: " + ids.max)
+          println("\t\ton round " + round + " from round: " + r)
+          println("\t\tTime: " + lamport)
+          if(round == r) {
+            if(ids.head == electionId) {
+              println("\t\tI gots the informations: " + ids.mkString(" ") + " with max: " + ids.max)
+              for(p <- connections.values) p ! Leader(ids.max, r, lamport)
+              this ! Leader(ids.max, r, lamport)
             } else {
-              Actor.actor {
-                Thread.sleep(Config.game.messageDelay)
-                neighbor ! TakeShelter(pigId, loc, messageId)
-                next ! TakeShelter(pigId, loc, messageId)
-              }
+              nextPig ! Election(ids ++ List(electionId), r, lamport)
             }
           }
         }
-        case Final(status) => {
-          println("And the final word is?")
-          statusHit = status //wasIHit()
-          if (statusHit) println("Im hit!") else println("I'm safe!")
-          if (isFirst) {
-            val messageId = UUID.randomUUID
-            seenMessages(messageId) = true
-            println("Querying statusAll")
-            Actor.actor {
-              Thread.sleep(Config.game.messageDelay)
-              neighbor ! StatusAll(Config.N / 2 + 1, Array(me.idNumber), messageId)
-              next ! StatusAll(Config.N / 2 + 1, Array(me.idNumber), messageId)
+        case Leader(leader, r, l) => {
+          lamport = math.max(l,lamport+1)
+          println("\tI got leader message of:")
+          println("\t\t leader " + leader + " round: " + r + " lamp: " + l)
+          if(leader == electionId && leadRound != round && r == round) {
+            leadRound = round
+            lord = me.name
+            println("\tI, Lord " + me.name + " am the newly elected leader of PigLandia! On round " + round )
+            println("\t\tWith maxid: " + electionId)
+            connections.values.foreach{ _ ! Inform(me.name,lamport) }
+            println("\t\tDelpoying PigCIA for secret information gathering session!")
+            var hitLocation: Int = (master !? Where).toString.toInt
+            println("\t\tThe probable hit location: " + hitLocation)
+            println("\t\tProprogating")
+            println("\t\tat time: " + lamport)
+            connections.values.foreach( _ ! BirdApproaching(hitLocation,lamport) )
+            this ! BirdApproaching(hitLocation,lamport)
+            connections.values.foreach( _ ! Hit(lamport + Config.game.messageDelay,lamport) )
+            this ! Hit(lamport + Config.game.messageDelay,lamport) 
+            numHit = 0
+            for(p <- connections.values) {
+              val s : Int = (p !? StatusAll(lamport)).asInstanceOf[Int]
+              numHit += s
             }
+            master ! Done(numHit)
           }
         }
-        case WasHit(pigId, status, trav) => {
-          println("Got Was Hit message with trav: " + trav.mkString(","))
-          if (trav.length == 0) {
-            if (status) numHit += 1
-            responses += 1
-            if (responses == Config.N - 1) {
-              if (statusHit) numHit += 1
-              master ! Done(numHit)
-            }
-          } else {
-            if (pConfig.idNumber == trav.last) {
-              Actor.actor {
-                Thread.sleep(Config.game.messageDelay)
-                neighbor ! WasHit(pigId, status, trav.take(trav.length - 1))
-              }
-            }
-            if (nConfig.idNumber == trav.last) {
-              Actor.actor {
-                Thread.sleep(Config.game.messageDelay)
-                next ! WasHit(pigId, status, trav.take(trav.length - 1))
-              }
-            }
-          }
+        case Inform(leader, l) => {
+          lamport = math.max(l,lamport+1)
+          lord = leader
+          println("\tI, " + me.name + " accept " + lord + " as my master! on round " + round )
+          println("\t\tat time: " + lamport)
         }
-        case StatusAll(hopcount, trav, messageId) => {
-          println("Got StatusAll message: with trav " + trav.mkString(","))
-          if (!seenMessages.contains(messageId)) {
-            println("accepting StatusAll message")
-            seenMessages(messageId) = true
-            if (pConfig.idNumber == trav.last) {
-              Actor.actor {
-                Thread.sleep(Config.game.messageDelay)
-                neighbor ! WasHit(me.idNumber, statusHit, trav.take(trav.length - 1))
-              }
-            }
-            if (nConfig.idNumber == trav.last) {
-              Actor.actor {
-                Thread.sleep(Config.game.messageDelay)
-                next ! WasHit(me.idNumber, statusHit, trav.take(trav.length - 1))
-              }
-            }
-            Actor.actor {
-              Thread.sleep(Config.game.messageDelay)
-              neighbor ! StatusAll(hopcount - 1, trav ++ Array(me.idNumber), messageId)
-              next ! StatusAll(hopcount - 1, trav ++ Array(me.idNumber), messageId)
-            }
-          }
-        }
-        case SendGame(board) => {
+        case SendGame(board, r) => {
+          lamport += 1
+          round = r
           sheltered = false
           statusHit = false
           pigBoard = board
           landedLoc = 0
           Game.printBoard(pigBoard)
-          var firstPig = 0
-          while (pigBoard(firstPig) == 0 || pigBoard(firstPig) == stone) firstPig += 1
           myLocation = 0
-          numHit = 0
-          responses = 0
           while (pigBoard(myLocation) != me.idNumber) myLocation += 1
-          isFirst = me.idNumber == pigBoard(firstPig)
-          if (me.idNumber == pigBoard(firstPig)) {
-            println("I'm the closest pig to the launch pad! Secret information gathering session commencing!")
-            var hitLocation: Int = (master !? Where).toString.toInt
-            println("The probable hit location: " + hitLocation)
-            println("Proprogating")
-            val messageId = UUID.randomUUID
-            //seenMessages(messageId) = true
-            Actor.actor {
-              Thread.sleep(Config.game.messageDelay)
-              neighbor ! BirdApproaching(hitLocation, messageId, Config.N / 2 + 1)
-              next ! BirdApproaching(hitLocation, messageId, Config.N / 2 + 1)
-            }
-          }
+          electionId += 1
+          if(electionId > Config.N+1) electionId = 0
+          println("Round: " + round)
+          println("\tI've got electionId of: " + electionId)
+          println("\t\tat time: " + lamport)
+          (nextPig ! Election(List(electionId),round,lamport))
         }
       }
     }
@@ -317,8 +290,8 @@ class Pig(val computer: String) extends Actor {
 
 object Pig {
   def main(args: Array[String]) {
-    Config.fromFile(args(0))
     RemoteActor.classLoader = getClass().getClassLoader()
+    Config.fromFile(args(0))
     val pig = new Pig(args(1))
     pig.start()
   }
