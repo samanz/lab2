@@ -1,0 +1,27 @@
+{ "pigs" : [
+	{
+		"name" : "Bacon",
+		"address" : "localhost",
+		"port" : 2401
+	},
+	{
+		"name" : "Ham",
+		"address" : "localhost",
+		"port" : 2402
+	},
+	{
+		"name" : "Pork",
+		"address" : "localhost",
+		"port" : 2403
+	}
+  ],
+  "master" : {
+  	"address" : "localhost",
+  	"port" : 2400
+  },
+  "game" : {
+  	"boardSize" : 3,
+  	"error" : 1,
+  	"messageDelay" : 5
+  }
+}
