@@ -22,6 +22,7 @@
   "game" : {
   	"boardSize" : 3,
   	"error" : 1,
-  	"messageDelay" : 5
+  	"messageDelay" : 5,
+  	"pigDelay" : 10
   }
 }

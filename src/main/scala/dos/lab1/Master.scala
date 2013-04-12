@@ -17,10 +17,6 @@ case class Connect(computer: String)
  * @param computer The hostname the computer is connecting from
  */
 case class Connected
-/** Actor message: Request the amount of nodes connected, so that the first pig can know everybody has connected. **/
-case object Nodes
-/** Actor message: Request the config information about the last connection so that the first one can complete the ring. **/
-case object First
 
 /**
  * Master class. Is an Actor whose job it is to help construct the P2P and send initial state of game.
@@ -98,12 +94,6 @@ class Master extends Actor {
         case Connected => {
           readyPigs += 1
         }
-        case Nodes => {
-          sender ! connections.size
-        }
-        case First => {
-          sender ! connections.last
-        }
         case Ready => {
           upConnections += 1
           if (upConnections == Config.N) {
@@ -124,14 +114,6 @@ class Master extends Actor {
         case Done(numHit) => {
           game.success = numHit
           game.done = true
-        }
-        case Final(status) => {
-          val aff = affected(game.landing).toSet
-          println("affed: " + aff.mkString(";"))
-          for (p <- pigToCon) {
-            val piggy = p._2
-            piggy ! Final(aff.contains(game.finalBoard(p._1)))
-          }
         }
       }
     }

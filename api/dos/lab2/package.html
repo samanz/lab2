@@ -1,0 +1,343 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>dos.lab2</title>
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link type="text/css" media="screen" rel="stylesheet" href="../../lib/template.css" />
+      <script type="text/javascript" src="../../lib/jquery.js"></script>
+      <script type="text/javascript" src="../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../lib/template.js"></script>
+      <script type="text/javascript" src="../../lib/tools.tooltip.js"></script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img src="../../lib/package_big.png" />
+        <p id="owner"><a name="dos" class="extype" href="../package.html">dos</a></p>
+        <h1>lab2</h1>
+      </div>
+
+      <h4 class="signature" id="signature">
+      <span class="kind">package</span>
+      <span class="symbol"> 
+        <span class="name">lab2</span>
+        
+        
+      </span>
+      </h4>
+      
+          <div class="fullcommenttop" id="comment"></div>
+        
+
+      <div id="template">
+
+        <div id="mbrsel">
+          <div id="textfilter"><span class="pre"></span><span class="input"><input accesskey="/" type="text" /></span><span class="post"></span></div>
+          
+          
+          <div id="visbl">
+              <span class="filtertype">Visibility</span>
+              <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+            </div>
+        </div>
+
+        
+
+        <div class="types members" id="types">
+              <h3>Type Members</h3>
+              <ol><li visbl="pub" name="dos.lab2.BirdApproaching" data-isabs="false">
+      <a id="BirdApproaching:BirdApproaching"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="BirdApproaching.html"><span class="name">BirdApproaching</span></a>
+        
+        <span class="params">(<span name="location">location: Int</span>, <span name="l">l: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: floods information to network with information about estimated location bird lands
+</p>
+    </li><li visbl="pub" name="dos.lab2.Computer" data-isabs="false">
+      <a id="Computer:Computer"></a>
+      <h4 class="signature">
+      <span class="kind">class</span>
+      <span class="symbol"> 
+        <a href="Computer.html"><span class="name">Computer</span></a>
+        
+        <span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Configuration information per hostname connected
+</p>
+    </li><li visbl="pub" name="dos.lab2.Connect" data-isabs="false">
+      <a id="Connect:Connect"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="Connect.html"><span class="name">Connect</span></a>
+        
+        <span class="params">(<span name="computer">computer: String</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Request from pig to join the P2P network.</p>
+    </li><li visbl="pub" name="dos.lab2.ConnectToAll" data-isabs="false">
+      <a id="ConnectToAll:ConnectToAll"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="ConnectToAll.html"><span class="name">ConnectToAll</span></a>
+        
+        <span class="params">(<span name="pigs">pigs: List[PigConfig]</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Tell the pigs that all the other pigs are up and ready and to connect to them
+</p>
+    </li><li visbl="pub" name="dos.lab2.Connected" data-isabs="false">
+      <a id="Connected:Connected"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="Connected.html"><span class="name">Connected</span></a>
+        
+        <span class="params">()</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Request from pig to join the P2P network.</p>
+    </li><li visbl="pub" name="dos.lab2.Done" data-isabs="false">
+      <a id="Done:Done"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="Done.html"><span class="name">Done</span></a>
+        
+        <span class="params">(<span name="numHit">numHit: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Tell the master that the round has ended and the amount of pigs that were hit in the round
+</p>
+    </li><li visbl="pub" name="dos.lab2.Election" data-isabs="false">
+      <a id="Election:Election"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="Election.html"><span class="name">Election</span></a>
+        
+        <span class="params">(<span name="ids">ids: List[Int]</span>, <span name="round">round: Int</span>, <span name="l">l: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: send election message to next pig in ring.</p>
+    </li><li visbl="pub" name="dos.lab2.Game" data-isabs="false">
+      <a id="Game:Game"></a>
+      <h4 class="signature">
+      <span class="kind">class</span>
+      <span class="symbol"> 
+        <a href="Game.html"><span class="name">Game</span></a>
+        
+        <span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Game class.</p>
+    </li><li visbl="pub" name="dos.lab2.GameConfig" data-isabs="false">
+      <a id="GameConfig:GameConfig"></a>
+      <h4 class="signature">
+      <span class="kind">class</span>
+      <span class="symbol"> 
+        <a href="GameConfig.html"><span class="name">GameConfig</span></a>
+        
+        <span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Configuration information for the game state
+</p>
+    </li><li visbl="pub" name="dos.lab2.Hit" data-isabs="false">
+      <a id="Hit:Hit"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="Hit.html"><span class="name">Hit</span></a>
+        
+        <span class="params">(<span name="delay">delay: Int</span>, <span name="l">l: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Sends the hit location to the master and then to the pigs</p>
+    </li><li visbl="pub" name="dos.lab2.Inform" data-isabs="false">
+      <a id="Inform:Inform"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="Inform.html"><span class="name">Inform</span></a>
+        
+        <span class="params">(<span name="leadme">leadme: String</span>, <span name="l">l: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Tell the pigs who is the leader
+</p>
+    </li><li visbl="pub" name="dos.lab2.Leader" data-isabs="false">
+      <a id="Leader:Leader"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="Leader.html"><span class="name">Leader</span></a>
+        
+        <span class="params">(<span name="id">id: Int</span>, <span name="round">round: Int</span>, <span name="l">l: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: floods information to network with information about who the leader id is.</p>
+    </li><li visbl="pub" name="dos.lab2.Master" data-isabs="false">
+      <a id="Master:Master"></a>
+      <h4 class="signature">
+      <span class="kind">class</span>
+      <span class="symbol"> 
+        <a href="Master.html"><span class="name">Master</span></a>
+        
+        <span class="result"> extends Actor</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Master class.</p>
+    </li><li visbl="pub" name="dos.lab2.MasterConfig" data-isabs="false">
+      <a id="MasterConfig:MasterConfig"></a>
+      <h4 class="signature">
+      <span class="kind">class</span>
+      <span class="symbol"> 
+        <a href="MasterConfig.html"><span class="name">MasterConfig</span></a>
+        
+        <span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Configuration information for the master node
+</p>
+    </li><li visbl="pub" name="dos.lab2.Pig" data-isabs="false">
+      <a id="Pig:Pig"></a>
+      <h4 class="signature">
+      <span class="kind">class</span>
+      <span class="symbol"> 
+        <a href="Pig.html"><span class="name">Pig</span></a>
+        
+        <span class="result"> extends Actor</span>
+      </span>
+      </h4>
+      <p class="comment cmt">A Pig class.</p>
+    </li><li visbl="pub" name="dos.lab2.PigConfig" data-isabs="false">
+      <a id="PigConfig:PigConfig"></a>
+      <h4 class="signature">
+      <span class="kind">class</span>
+      <span class="symbol"> 
+        <a href="PigConfig.html"><span class="name">PigConfig</span></a>
+        
+        <span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Configuration information per pig
+</p>
+    </li><li visbl="pub" name="dos.lab2.SendGame" data-isabs="false">
+      <a id="SendGame:SendGame"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="SendGame.html"><span class="name">SendGame</span></a>
+        
+        <span class="params">(<span name="board">board: Array[Int]</span>, <span name="round">round: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Sends board information to Master and then to the pigs
+</p>
+    </li><li visbl="pub" name="dos.lab2.StatusAll" data-isabs="false">
+      <a id="StatusAll:StatusAll"></a>
+      <h4 class="signature">
+      <span class="kind">case class</span>
+      <span class="symbol"> 
+        <a href="StatusAll.html"><span class="name">StatusAll</span></a>
+        
+        <span class="params">(<span name="l">l: Int</span>)</span><span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: floods the network with requesting the status from all the pigs
+</p>
+    </li></ol>
+            </div>
+        
+        
+
+        <div class="values members" id="values">
+              <h3>Value Members</h3>
+              <ol><li visbl="pub" name="dos.lab2.Config" data-isabs="false">
+      <a id="Config:Config"></a>
+      <h4 class="signature">
+      <span class="kind">object</span>
+      <span class="symbol"> 
+        <a href="Config$.html"><span class="name">Config</span></a>
+        
+        <span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Singleton Object containing the configuration information for the PigGame *</p>
+    </li><li visbl="pub" name="dos.lab2.Game" data-isabs="false">
+      <a id="Game:Game"></a>
+      <h4 class="signature">
+      <span class="kind">object</span>
+      <span class="symbol"> 
+        <a href="Game$.html"><span class="name">Game</span></a>
+        
+        <span class="result"> extends AnyRef</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="dos.lab2.Master" data-isabs="false">
+      <a id="Master:Master"></a>
+      <h4 class="signature">
+      <span class="kind">object</span>
+      <span class="symbol"> 
+        <a href="Master$.html"><span class="name">Master</span></a>
+        
+        <span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="dos.lab2.Pig" data-isabs="false">
+      <a id="Pig:Pig"></a>
+      <h4 class="signature">
+      <span class="kind">object</span>
+      <span class="symbol"> 
+        <a href="Pig$.html"><span class="name">Pig</span></a>
+        
+        <span class="result"> extends Serializable</span>
+      </span>
+      </h4>
+      
+    </li><li visbl="pub" name="dos.lab2.Ready" data-isabs="false">
+      <a id="Ready:Ready"></a>
+      <h4 class="signature">
+      <span class="kind">object</span>
+      <span class="symbol"> 
+        <a href="Ready$.html"><span class="name">Ready</span></a>
+        
+        <span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Tells master that it is ready to be connected to *</p>
+    </li><li visbl="pub" name="dos.lab2.Where" data-isabs="false">
+      <a id="Where:Where"></a>
+      <h4 class="signature">
+      <span class="kind">object</span>
+      <span class="symbol"> 
+        <a href="Where$.html"><span class="name">Where</span></a>
+        
+        <span class="result"> extends Product with Serializable</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Actor message: Asks the master to help get information about estimated location of bird hitting *</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+
+      </div>
+      
+      <div id="tooltip"></div>
+      
+    </body>
+      </html>

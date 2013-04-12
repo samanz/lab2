@@ -20,6 +20,6 @@ fork in run := true
 
 fork in runMain := true
 
-javaOptions in run += "-Xmx8G"
+javaOptions in run += "-Xmx1G"
 
-javaOptions in runMain += "-Xmx8G"
+javaOptions in runMain += "-Xmx1G"

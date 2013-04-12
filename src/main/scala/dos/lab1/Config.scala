@@ -20,10 +20,11 @@ class PigConfig(val name : String, val address : String, val port : Int) {
   * Configuration information for the game state
   *
   * @param size Size of the board. Is a multiplier for the number of pigs in the network
-  * @param messageDelay Hop-by-bop delay time in ms
+  * @param messageDelay The delay estimated for the bird to land
+  * @param pigDelay The max delay for a pig to recieve a message 
   * @param error 0 if the estimated location is perfect and 1 if it can be off by 1 in either direction
   */
-class GameConfig(val size : Int, val messageDelay : Int, val error : Int)
+class GameConfig(val size : Int, val messageDelay : Int, val pigDelay : Int, val error : Int)
 /**
   * Configuration information per hostname connected
   *
@@ -71,6 +72,6 @@ object Config {
 		val m = (json \ "master")
 		master = new MasterConfig( (m \ "address").values.toString,  (m \ "port").values.toString.toInt )
 		val g = (json \ "game")
-		game = new GameConfig( (g \ "boardSize").values.toString.toInt*N, (g \ "messageDelay").values.toString.toInt, (g \ "error").values.toString.toInt  )
+		game = new GameConfig( (g \ "boardSize").values.toString.toInt*N, (g \ "messageDelay").values.toString.toInt, (g \ "pigDelay").values.toString.toInt, (g \ "error").values.toString.toInt  )
 	}
 }

@@ -10,16 +10,15 @@ import scala.collection.mutable.HashMap
 /** Actor message: Sends board information to Master and then to the pigs 
   * 
   * @param board The representation of the world
+  * @param round The representation of the world
   */
 case class SendGame(board : Array[Int], round : Int)
+
 /** Actor message: Sends the hit location to the master and then to the pigs
   * @param landing The final landing information of the bird
+  * @param l The value of the lamport clock
 */
 case class Hit(delay : Int, l : Int)
-/** Actor message: Tells the master to send information about whether a pig is hit by bird. Master will use this message to send that information. 
-  * @param status The status of the pigs being hit or not by the bird
-  */
-case class Final(status : Boolean)
 
 /** Game class. Runs the game, creates the board, stores statistics.
   * 
@@ -56,7 +55,9 @@ class Game(val master : Master) {
         done = false
     	println("Playing round %d".format(round))
     	randomizeGame()
+        println("1")
         loadFinalBoard()
+        println("2")
     	landing = rand.nextInt(Config.game.size)
         println("Will hit location: " + landing)
     	Game.printBoard(board)
@@ -66,7 +67,6 @@ class Game(val master : Master) {
     	Thread.sleep(speed)
         println("Hitting!")
         Game.printBoard(board, finalBoard)
-        (master ! Final(true))
         println("Are we done yet?!")
         while(!done) Thread.sleep(1000)
     	println("Game Stats: num hit: " + success)
@@ -78,22 +78,14 @@ class Game(val master : Master) {
     def randomizeGame() {
 		(0 until board.length).foreach( board(_) = 0 )    	
 		val stone = Config.N+1
-    	val stones = rand.nextInt(7)
-    	for( i <- 0 until stones) {
-    		var placed = false
-    		while(!placed) {
-    			val place = rand.nextInt(Config.game.size)
-    			if(board(place) == 0) { board(place) = stone; placed = true }
-    		}
-    	}
     	for(i <- master.connections) {
     		var placed = false
     		while(!placed) {
     			val place = rand.nextInt(Config.game.size)
     			if(board(place) == 0) { 
     				board(place) = i.idNumber; placed = true; 
-    				if(place-1 > 0 && place-1 < Config.N && board(place) == 0 && rand.nextDouble > .25) board(place-1) = stone
-    				else if(place+1 > 0 && place+1 < Config.N && board(place+1) == 0 && rand.nextDouble > .25) board(place+1) = stone
+    				if(place-1 >= 0 && place-1 < Config.game.size && board(place-1) == 0 && rand.nextDouble > .25) board(place-1) = stone
+    				else if(place+1 >= 0 && place+1 < Config.game.size && board(place+1) == 0 && rand.nextDouble > .25) board(place+1) = stone
     			}
     		}
     	}

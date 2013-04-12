@@ -12,23 +12,24 @@ case object Ready
 /** Actor message: Asks the master to help get information about estimated location of bird hitting **/
 case object Where
 /**
- * Actor message: floods information to P2P network with information about estimated location bird lands
+ * Actor message: floods information to network with information about estimated location bird lands
  *
- * @param position The location the bird might land
- * @param messageId The UUID of the message
+ * @param location The location the bird might land
+ * @param l The lamport clock value of sending proccess
  * @param hopcount The number of hops allowed left to be made in the p2p network
  */
 case class BirdApproaching(location : Int, l : Int)
 /**
- * Actor message: floods information to P2P network with information about estimated location bird lands
+ * Actor message: send election message to next pig in ring. If gets back its own message, it elects the leader.
  *
- * @param position The location the bird might land
- * @param messageId The UUID of the message
- * @param hopcount The number of hops allowed left to be made in the p2p network
+ * @param ids The list of ids appended to the message
+ * @param round The current round number
+ * @param l The lamport clock value of sending proccess
  */
 case class Election(ids : List[Int], round : Int, l : Int)
 /**
- * Actor message: floods information to P2P network with information about estimated location bird lands
+ * Actor message: floods information to network with information about who the leader id is. 
+ * The process with leader id informs the rest about which process is the leader.
  *
  * @param position The location the bird might land
  * @param messageId The UUID of the message
@@ -36,11 +37,9 @@ case class Election(ids : List[Int], round : Int, l : Int)
  */
 case class Leader(id : Int, round : Int, l : Int)
 /**
- * Actor message: floods the P2P network with requesting the status from all the pigs
+ * Actor message: floods the network with requesting the status from all the pigs
  *
- * @param hopcount The number of hops allowed left to be made in the p2p network
- * @param trav The ids indicating the traversal of the message through the p2p network so it can be reversed by the reply message
- * @param messageId The UUID of the message
+ * @param l The lamport clock value of sending proccess
  */
 case class StatusAll(l : Int)
 /**
@@ -49,7 +48,12 @@ case class StatusAll(l : Int)
  * @param numHit The number of pigs hit during round
  */
 case class Done(numHit: Int)
-
+/**
+ * Actor message: Tell the pigs who is the leader
+ *
+ * @param leadme The name of the pig leader
+ * @param l The lamport clock value of sending proccess
+ */
 case class Inform(leadme: String, l : Int)
 
 /**
@@ -67,30 +71,18 @@ case class ConnectToAll(pigs : List[PigConfig])
 class Pig(val computer: String) extends Actor {
   /** The current game state as seen by an individual pig **/
   var pigBoard = new Array[Int](Config.game.size)
-  /** The configuration information of the pig before in the ring **/
-  var pConfig: PigConfig = null
-  /** The configuration information of the pig after in the ring **/
-  var nConfig: PigConfig = null
   /** The configuration information of the current pig **/
   var me: PigConfig = null
   /** The number that is a stone column on the map **/
   val stone = Config.N + 1
   /** Current location of the pig on game map **/
   var myLocation = 0
-  /** Contains unique IDs of messages seen already on the network **/
-  val seenMessages = new HashMap[UUID, Boolean]()
-  /** Stores the information of if a pig already took shelter **/
-  var sheltered = false
   /** Stores the information of if a pig has been hit by a bird **/
   var statusHit = false
-  /** Stores the information of if a pig is the first one on the map **/
-  var isFirst = false
   /** The location the bird is actually going to hit **/
   var landedLoc: Int = 0
   /** The number of pigs hit, used by first pig to update master about state. **/
   var numHit = 0
-  /** The number of statusAll responses the first pig has seen **/
-  var responses = 0
   /** The information about other pigs **/
   val otherPigs = new ArrayBuffer[PigConfig]()
   /** The connections to other pigs **/
@@ -199,7 +191,7 @@ class Pig(val computer: String) extends Actor {
         case BirdApproaching(location,l) => {
           landedLoc = location
           lamport = math.max(l,lamport+1)
-          lamport += rand.nextInt(6)
+          lamport += rand.nextInt(Config.game.pigDelay)
           println("\taccepting BirdApproaching message")
           println("\t\tat time: " + lamport)
           evading = false
@@ -248,16 +240,19 @@ class Pig(val computer: String) extends Actor {
             println("\t\tThe probable hit location: " + hitLocation)
             println("\t\tProprogating")
             println("\t\tat time: " + lamport)
-            connections.values.foreach( _ ! BirdApproaching(hitLocation,lamport) )
-            this ! BirdApproaching(hitLocation,lamport)
-            connections.values.foreach( _ ! Hit(lamport + Config.game.messageDelay,lamport) )
-            this ! Hit(lamport + Config.game.messageDelay,lamport) 
-            numHit = 0
-            for(p <- connections.values) {
-              val s : Int = (p !? StatusAll(lamport)).asInstanceOf[Int]
-              numHit += s
+            Actor.actor {
+              connections.values.foreach( _ ! BirdApproaching(hitLocation,lamport) )
+              this ! BirdApproaching(hitLocation,lamport)
+              connections.values.foreach( _ ! Hit(lamport + Config.game.messageDelay,lamport) )
+              this ! Hit(lamport + Config.game.messageDelay,lamport) 
+              numHit = 0
+              for(p <- connections.values) {
+               val s : Int = (p !? StatusAll(lamport)).asInstanceOf[Int]
+               numHit += s
+              }
+              numHit += (this !? StatusAll(lamport)).asInstanceOf[Int]
+              master ! Done(numHit)
             }
-            master ! Done(numHit)
           }
         }
         case Inform(leader, l) => {
@@ -269,7 +264,6 @@ class Pig(val computer: String) extends Actor {
         case SendGame(board, r) => {
           lamport += 1
           round = r
-          sheltered = false
           statusHit = false
           pigBoard = board
           landedLoc = 0
